@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Upload, Download, Award, Star, Check, ArrowRight, Building2, Sparkles } from "lucide-react";
+import { Upload, Download, Award, Star, Check, ArrowRight, Building2, Sparkles, LogIn, LogOut } from "lucide-react";
+import { supabase } from "./supabaseClient";
 
 const TEMPLATES = [
   { id: "plaque", name: "Gold Plaque", desc: "Navy & brass, formal" },
@@ -144,18 +145,79 @@ function drawFrame(ctx, { template, img, name, level, company }) {
   }
 }
 
-const MOCK_PLAN = { name: "Starter", quota: 10 };
+const QUOTA_BY_PLAN = { starter: 10, pro: 30, unlimited: 999999 };
+
+function AuthBox({ onAuthed }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState("signup");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true); setError("");
+    const fn = mode === "signup" ? supabase.auth.signUp : supabase.auth.signInWithPassword;
+    const { data, error } = await fn({ email, password });
+    setBusy(false);
+    if (error) { setError(error.message); return; }
+    if (data?.user) onAuthed(data.user);
+    else if (mode === "signup") setError("Check your email to confirm your account, then log in.");
+  };
+
+  return (
+    <div style={{ maxWidth: 360, margin: "60px auto", padding: 28, border: "1px solid #3A3F4B", borderRadius: 2, background: "#161920" }}>
+      <h2 className="fraunces" style={{ fontSize: 22, marginBottom: 18 }}>{mode === "signup" ? "Create your account" : "Log in"}</h2>
+      <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
+        style={{ width: "100%", background: "#12151C", border: "1px solid #3A3F4B", color: "#F4EFE4", padding: "11px 14px", borderRadius: 2, fontSize: 14, marginBottom: 10, boxSizing: "border-box" }} />
+      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+        style={{ width: "100%", background: "#12151C", border: "1px solid #3A3F4B", color: "#F4EFE4", padding: "11px 14px", borderRadius: 2, fontSize: 14, marginBottom: 14, boxSizing: "border-box" }} />
+      {error && <div style={{ color: "#D97757", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+      <button onClick={submit} disabled={busy}
+        style={{ width: "100%", background: "#C9A227", color: "#12151C", padding: "12px", borderRadius: 2, fontWeight: 700, border: "none", cursor: "pointer", marginBottom: 12 }}>
+        {busy ? "Please wait…" : mode === "signup" ? "Sign up" : "Log in"}
+      </button>
+      <div style={{ textAlign: "center", fontSize: 13, color: "#9BA0AC" }}>
+        {mode === "signup" ? "Already have an account?" : "New here?"}{" "}
+        <span onClick={() => setMode(mode === "signup" ? "login" : "signup")} style={{ color: "#C9A227", cursor: "pointer" }}>
+          {mode === "signup" ? "Log in" : "Sign up"}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export default function PodiumApp() {
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [template, setTemplate] = useState("plaque");
   const [name, setName] = useState("");
   const [level, setLevel] = useState("");
   const [company, setCompany] = useState("");
   const [imgObj, setImgObj] = useState(null);
-  const [usedThisMonth, setUsedThisMonth] = useState(3);
   const canvasRef = useRef(null);
   const fileRef = useRef(null);
-  const remaining = MOCK_PLAN.quota - usedThisMonth;
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => setSession(sess));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const loadProfile = useCallback(async (userId) => {
+    let { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    if (!data) {
+      const { data: created } = await supabase.from("profiles")
+        .insert({ id: userId, plan: "starter", downloads_used: 0 }).select().single();
+      data = created;
+    }
+    setProfile(data);
+  }, []);
+
+  useEffect(() => { if (session?.user) loadProfile(session.user.id); }, [session, loadProfile]);
+
+  const quota = profile ? QUOTA_BY_PLAN[profile.plan] ?? 10 : 10;
+  const usedThisMonth = profile?.downloads_used ?? 0;
+  const remaining = quota - usedThisMonth;
   const outOfQuota = remaining <= 0;
 
   const redraw = useCallback(() => {
@@ -175,14 +237,16 @@ export default function PodiumApp() {
     img.src = URL.createObjectURL(file);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (outOfQuota) return;
     const canvas = canvasRef.current;
     const link = document.createElement("a");
     link.download = `${(name || "achievement").replace(/\s+/g, "-").toLowerCase()}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
-    setUsedThisMonth(u => u + 1);
+    const newCount = usedThisMonth + 1;
+    setProfile(p => ({ ...p, downloads_used: newCount }));
+    await supabase.from("profiles").update({ downloads_used: newCount }).eq("id", session.user.id);
   };
 
   return (
@@ -201,7 +265,15 @@ export default function PodiumApp() {
           <Award size={22} color="#C9A227" />
           <span className="fraunces" style={{ fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>Podium</span>
         </div>
-        <a href="#studio" style={{ color: "#C9A227", textDecoration: "none", fontSize: 14, fontWeight: 600, border: "1px solid #C9A227", padding: "9px 20px", borderRadius: 2 }}>Try the Studio →</a>
+        <a href="#studio" style={{ color: "#C9A227", textDecoration: "none", fontSize: 14, fontWeight: 600, border: "1px solid #C9A227", padding: "9px 20px", borderRadius: 2, display: "flex", alignItems: "center", gap: 8 }}>
+          {session ? (
+            <span onClick={(e) => { e.preventDefault(); supabase.auth.signOut(); }} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <LogOut size={14} /> Log out
+            </span>
+          ) : (
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}><LogIn size={14} /> Try the Studio</span>
+          )}
+        </a>
       </nav>
 
       {/* HERO */}
@@ -220,12 +292,15 @@ export default function PodiumApp() {
 
       {/* STUDIO */}
       <section id="studio" style={{ padding: "40px 48px 100px", maxWidth: 1100, margin: "0 auto" }}>
+        {!session ? (
+          <AuthBox onAuthed={() => {}} />
+        ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 48, alignItems: "start" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <h2 className="fraunces" style={{ fontSize: 28, fontWeight: 600 }}>The Studio</h2>
               <div className="mono" style={{ fontSize: 12, color: outOfQuota ? "#D97757" : "#9BA0AC", border: `1px solid ${outOfQuota ? "#D97757" : "#3A3F4B"}`, padding: "6px 12px", borderRadius: 2 }}>
-                {MOCK_PLAN.name} · {Math.max(remaining, 0)}/{MOCK_PLAN.quota} left this month
+                {(profile?.plan ?? "starter").toUpperCase()} · {Math.max(remaining, 0)}/{quota} left this month
               </div>
             </div>
 
@@ -282,6 +357,7 @@ export default function PodiumApp() {
             <canvas ref={canvasRef} width={640} height={800} style={{ width: "100%", maxWidth: 380, borderRadius: 2, boxShadow: "0 30px 80px rgba(0,0,0,0.5)" }} />
           </div>
         </div>
+        )}
       </section>
 
       {/* PRICING */}
