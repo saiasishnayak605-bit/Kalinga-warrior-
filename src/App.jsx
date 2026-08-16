@@ -156,12 +156,18 @@ function AuthBox({ onAuthed }) {
 
   const submit = async () => {
     setBusy(true); setError("");
-    const fn = mode === "signup" ? supabase.auth.signUp : supabase.auth.signInWithPassword;
-    const { data, error } = await fn({ email, password });
-    setBusy(false);
-    if (error) { setError(error.message); return; }
-    if (data?.user) onAuthed(data.user);
-    else if (mode === "signup") setError("Check your email to confirm your account, then log in.");
+    try {
+      const { data, error } = mode === "signup"
+        ? await supabase.auth.signUp({ email, password })
+        : await supabase.auth.signInWithPassword({ email, password });
+      if (error) { setError(error.message); return; }
+      if (data?.user) onAuthed(data.user);
+      else if (mode === "signup") setError("Check your email to confirm your account, then log in.");
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
