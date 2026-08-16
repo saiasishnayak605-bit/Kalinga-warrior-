@@ -9,9 +9,9 @@ const TEMPLATES = [
 ];
 
 const PLANS = [
-  { name: "Starter", price: "₹499", period: "/month", blurb: "For small teams getting started", features: ["Up to 25 frames / month", "3 templates", "PNG downloads"] },
-  { name: "Team", price: "₹1,499", period: "/month", blurb: "For growing companies", features: ["Unlimited frames", "All templates", "Custom logo placement", "Priority support"], featured: true },
-  { name: "Business", price: "₹3,999", period: "/month", blurb: "For larger organisations", features: ["Everything in Team", "Bulk upload (CSV)", "Video export", "Dedicated onboarding"] },
+  { key: "starter", name: "Starter", price: "₹199", period: "/month", blurb: "For individuals, occasional use", features: ["10 downloads / month", "Basic templates", "PNG downloads"] },
+  { key: "pro", name: "Pro", price: "₹499", period: "/month", blurb: "For regular / active users", features: ["30 downloads / month", "All templates", "Priority support"], featured: true },
+  { key: "unlimited", name: "Unlimited", price: "₹999", period: "/month", blurb: "For power users, teams", features: ["Unlimited downloads", "All templates", "Priority support"] },
 ];
 
 function drawFrame(ctx, { template, img, name, level, company }) {
@@ -215,6 +215,39 @@ export default function PodiumApp() {
 
   useEffect(() => { if (session?.user) loadProfile(session.user.id); }, [session, loadProfile]);
 
+  const [checkoutBusy, setCheckoutBusy] = useState(null);
+
+  const handleSubscribe = async (planKey) => {
+    if (!session) { window.location.hash = "#studio"; return; }
+    setCheckoutBusy(planKey);
+    try {
+      const res = await fetch("/api/create-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planKey, userId: session.user.id, userEmail: session.user.email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not start checkout");
+
+      const rzp = new window.Razorpay({
+        key: data.keyId,
+        subscription_id: data.subscriptionId,
+        name: "Kalinga Warrior",
+        description: `${planKey} plan`,
+        theme: { color: "#C9A227" },
+        handler: function () {
+          alert("Payment successful! Your plan will update in a few seconds.");
+          setTimeout(() => loadProfile(session.user.id), 4000);
+        },
+      });
+      rzp.open();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCheckoutBusy(null);
+    }
+  };
+
   const quota = profile ? QUOTA_BY_PLAN[profile.plan] ?? 10 : 10;
   const usedThisMonth = profile?.downloads_used ?? 0;
   const remaining = quota - usedThisMonth;
@@ -388,13 +421,14 @@ export default function PodiumApp() {
                     </div>
                   ))}
                 </div>
-                <button style={{
-                  width: "100%", padding: "12px", borderRadius: 2, fontWeight: 700, fontSize: 13, cursor: "pointer",
-                  background: p.featured ? "#C9A227" : "transparent",
-                  color: p.featured ? "#12151C" : "#F4EFE4",
-                  border: `1px solid ${p.featured ? "#C9A227" : "#3A3F4B"}`
-                }}>
-                  Choose {p.name}
+                <button onClick={() => handleSubscribe(p.key)} disabled={checkoutBusy === p.key}
+                  style={{
+                    width: "100%", padding: "12px", borderRadius: 2, fontWeight: 700, fontSize: 13, cursor: "pointer",
+                    background: p.featured ? "#C9A227" : "transparent",
+                    color: p.featured ? "#12151C" : "#F4EFE4",
+                    border: `1px solid ${p.featured ? "#C9A227" : "#3A3F4B"}`
+                  }}>
+                  {checkoutBusy === p.key ? "Opening…" : `Choose ${p.name}`}
                 </button>
               </div>
             ))}
