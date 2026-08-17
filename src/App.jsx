@@ -241,6 +241,7 @@ export default function PodiumApp() {
         name: "Kalinga Warrior",
         description: `${planKey} plan`,
         theme: { color: "#C9A227" },
+        prefill: { email: session.user.email },
         handler: function () {
           alert("Payment successful! Your plan will update in a few seconds.");
           setTimeout(() => loadProfile(session.user.id), 4000);
