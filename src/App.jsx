@@ -2,6 +2,15 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Upload, Download, Award, Star, Check, ArrowRight, Building2, Sparkles, LogIn, LogOut } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
+function LogoMark({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <path d="M50 12 L82 28 L82 58 Q82 82 50 92 Q18 82 18 58 L18 28 Z" stroke="#C9A227" strokeWidth="5" fill="none" />
+      <path d="M50 34 L60 52 L50 70 L40 52 Z" fill="#C9A227" />
+    </svg>
+  );
+}
+
 const TEMPLATES = [
   { id: "plaque", name: "Gold Plaque", desc: "Navy & brass, formal" },
   { id: "badge", name: "Modern Badge", desc: "Parchment, clean corners" },
@@ -297,13 +306,16 @@ export default function PodiumApp() {
         .mono { font-family: 'IBM Plex Mono', monospace; }
         input, select { font-family: 'Inter', sans-serif; }
         ::selection { background: #C9A227; color: #12151C; }
+        button, a { transition: opacity 0.15s ease, transform 0.15s ease; }
+        button:hover:not(:disabled), a:hover { opacity: 0.85; }
+        button:active:not(:disabled) { transform: scale(0.98); }
       `}</style>
 
       {/* NAV */}
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 48px", borderBottom: "1px solid #23262F" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Award size={22} color="#C9A227" />
-          <span className="fraunces" style={{ fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>Podium</span>
+          <LogoMark size={24} />
+          <span className="fraunces" style={{ fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>Kalinga Warrior</span>
         </div>
         <a href="#studio" style={{ color: "#C9A227", textDecoration: "none", fontSize: 14, fontWeight: 600, border: "1px solid #C9A227", padding: "9px 20px", borderRadius: 2, display: "flex", alignItems: "center", gap: 8 }}>
           {session ? (
@@ -328,6 +340,38 @@ export default function PodiumApp() {
         <a href="#studio" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#C9A227", color: "#12151C", padding: "14px 28px", borderRadius: 2, fontWeight: 700, textDecoration: "none", fontSize: 15 }}>
           Build your first frame <ArrowRight size={16} />
         </a>
+
+        <div style={{ marginTop: 56, display: "flex", justifyContent: "center" }}>
+          <svg width="220" height="140" viewBox="0 0 220 140" fill="none">
+            <line x1="110" y1="70" x2="20" y2="20" stroke="#2A2F3A" strokeWidth="1" />
+            <line x1="110" y1="70" x2="200" y2="20" stroke="#2A2F3A" strokeWidth="1" />
+            <line x1="110" y1="70" x2="20" y2="120" stroke="#2A2F3A" strokeWidth="1" />
+            <line x1="110" y1="70" x2="200" y2="120" stroke="#2A2F3A" strokeWidth="1" />
+            <line x1="110" y1="70" x2="110" y2="10" stroke="#2A2F3A" strokeWidth="1" />
+            <circle cx="20" cy="20" r="3" fill="#C9A227" opacity="0.5" />
+            <circle cx="200" cy="20" r="3" fill="#C9A227" opacity="0.5" />
+            <circle cx="20" cy="120" r="3" fill="#C9A227" opacity="0.5" />
+            <circle cx="200" cy="120" r="3" fill="#C9A227" opacity="0.5" />
+            <circle cx="110" cy="10" r="3" fill="#C9A227" opacity="0.5" />
+            <path d="M110 40 L142 55 L142 82 Q142 104 110 114 Q78 104 78 82 L78 55 Z" stroke="#C9A227" strokeWidth="3" fill="#12151C" />
+            <path d="M110 58 L119 71 L110 84 L101 71 Z" fill="#C9A227" />
+          </svg>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section style={{ padding: "0 48px 80px", maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+        {[
+          { n: "01", t: "Pick a template", d: "Choose from plaque, badge, or ribbon styles." },
+          { n: "02", t: "Add your photo", d: "Upload once, it's composited automatically." },
+          { n: "03", t: "Download & share", d: "Get a branded PNG, ready to post or print." },
+        ].map(step => (
+          <div key={step.n} style={{ textAlign: "center" }}>
+            <div className="mono" style={{ color: "#C9A227", fontSize: 13, marginBottom: 10 }}>{step.n}</div>
+            <div className="fraunces" style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{step.t}</div>
+            <div style={{ color: "#9BA0AC", fontSize: 14, lineHeight: 1.5 }}>{step.d}</div>
+          </div>
+        ))}
       </section>
 
       {/* STUDIO */}
@@ -444,7 +488,7 @@ export default function PodiumApp() {
       </section>
 
       <footer style={{ padding: "30px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", color: "#6B7280", fontSize: 13 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><Building2 size={14} /> Podium — recognition, framed</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><LogoMark size={14} /> Kalinga Warrior — recognition, framed</div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Sparkles size={13} color="#C9A227" /> Prototype build</div>
       </footer>
     </div>
