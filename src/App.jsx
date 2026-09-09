@@ -11,6 +11,40 @@ function LogoMark({ size = 22 }) {
   );
 }
 
+function CrestBadge({ size = 200 }) {
+  const id = "badgeGrad";
+  return (
+    <svg width={size} height={size} viewBox="0 0 300 300">
+      <defs>
+        <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F4C542" />
+          <stop offset="50%" stopColor="#E8862B" />
+          <stop offset="100%" stopColor="#C9540F" />
+        </linearGradient>
+        <path id="topArc" d="M 40 150 A 110 110 0 0 1 260 150" fill="none" />
+        <path id="bottomArc" d="M 60 195 A 110 110 0 0 0 240 195" fill="none" />
+      </defs>
+      <circle cx="150" cy="150" r="145" fill={`url(#${id})`} />
+      <circle cx="150" cy="150" r="128" fill="#12151C" stroke="#F4EFE4" strokeWidth="3" />
+      <text fill="#F4EFE4" fontSize="19" fontWeight="700" fontFamily="Inter, sans-serif" letterSpacing="3">
+        <textPath href="#topArc" startOffset="50%" textAnchor="middle">KALINGA WARRIOR</textPath>
+      </text>
+      <text fill="#F4EFE4" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif" letterSpacing="2">
+        <textPath href="#bottomArc" startOffset="50%" textAnchor="middle">RECOGNITION · FRAMED</textPath>
+      </text>
+      <polygon points="72,95 78,109 72,123 66,109" fill="#C9A227" />
+      <polygon points="228,95 234,109 228,123 222,109" fill="#C9A227" />
+      {/* central chariot wheel */}
+      <circle cx="150" cy="160" r="46" stroke="#C9A227" strokeWidth="4" fill="none" />
+      <circle cx="150" cy="160" r="7" fill="#C9A227" />
+      {Array.from({ length: 8 }).map((_, i) => {
+        const a = (i * 45 * Math.PI) / 180;
+        return <line key={i} x1="150" y1="160" x2={150 + 46 * Math.cos(a)} y2={160 + 46 * Math.sin(a)} stroke="#C9A227" strokeWidth="3" />;
+      })}
+    </svg>
+  );
+}
+
 const TEMPLATES = [
   { id: "plaque", name: "Gold Plaque", desc: "Navy & brass, formal" },
   { id: "badge", name: "Modern Badge", desc: "Parchment, clean corners" },
@@ -394,7 +428,10 @@ export default function PodiumApp() {
       </nav>
 
       {/* HERO */}
-      <section style={{ padding: "80px 48px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
+      <section style={{ padding: "60px 48px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+          <CrestBadge size={170} />
+        </div>
         <div className="mono" style={{ color: "#C9A227", fontSize: 13, letterSpacing: 3, marginBottom: 18 }}>EMPLOYEE RECOGNITION, FRAMED</div>
         <h1 className="fraunces" style={{ fontSize: 56, lineHeight: 1.1, fontWeight: 700, margin: "0 0 22px", maxWidth: 780, marginLeft: "auto", marginRight: "auto" }}>
           Every milestone deserves its own plaque.
@@ -434,37 +471,50 @@ export default function PodiumApp() {
           <circle cx="850" cy="35" r="26" fill="#F4A623" opacity="0.9" />
           <line x1="0" y1="118" x2="1000" y2="118" stroke="#C9A227" strokeWidth="1" opacity="0.4" />
         </svg>
-        <div className="chariot-run" style={{ position: "absolute", bottom: 8, left: 0 }}>
-          <svg width="180" height="90" viewBox="0 0 180 90" fill="none">
-            {/* wheel */}
-            <circle cx="130" cy="65" r="20" stroke="#F4EFE4" strokeWidth="3" fill="none" />
-            <circle cx="130" cy="65" r="3" fill="#F4EFE4" />
-            {[0, 45, 90, 135].map(a => (
-              <line key={a} x1="130" y1="65" x2={130 + 20 * Math.cos((a * Math.PI) / 180)} y2={65 + 20 * Math.sin((a * Math.PI) / 180)} stroke="#F4EFE4" strokeWidth="2" />
+        <div className="chariot-run" style={{ position: "absolute", bottom: 4, left: 0 }}>
+          <svg width="340" height="110" viewBox="0 0 340 110" fill="#F4EFE4">
+            {/* two large decorated wheels */}
+            {[110, 200].map(cx => (
+              <g key={cx}>
+                <circle cx={cx} cy="78" r="26" fill="none" stroke="#F4EFE4" strokeWidth="5" />
+                <circle cx={cx} cy="78" r="5" fill="#F4EFE4" />
+                {Array.from({ length: 10 }).map((_, i) => {
+                  const a = (i * 36 * Math.PI) / 180;
+                  return <line key={i} x1={cx} y1="78" x2={cx + 26 * Math.cos(a)} y2={78 + 26 * Math.sin(a)} stroke="#F4EFE4" strokeWidth="3" />;
+                })}
+              </g>
             ))}
-            {/* chariot body */}
-            <path d="M95 65 L120 45 L145 45 L140 65 Z" fill="#F4EFE4" />
-            <line x1="107" y1="45" x2="107" y2="30" stroke="#F4EFE4" strokeWidth="3" />
+            {/* chariot platform + canopy */}
+            <path d="M95 78 L95 50 L215 50 L215 78 Z" />
+            <path d="M85 50 L225 50 L210 30 L100 30 Z" />
+            {/* flag */}
+            <line x1="155" y1="30" x2="155" y2="8" stroke="#F4EFE4" strokeWidth="3" />
+            <path d="M155 8 L180 14 L155 20 Z" />
             {/* rider */}
-            <circle cx="107" cy="22" r="6" fill="#F4EFE4" />
-            <line x1="107" y1="28" x2="107" y2="44" stroke="#F4EFE4" strokeWidth="3" />
+            <circle cx="155" cy="40" r="8" />
+            <rect x="149" y="46" width="12" height="20" rx="3" />
             {/* reins */}
-            <line x1="95" y1="50" x2="55" y2="35" stroke="#F4EFE4" strokeWidth="2" />
-            {/* horse */}
-            <path d="M55 60 L52 40 L60 25 L68 30 L64 45 L70 60 Z" fill="#F4EFE4" />
-            <line x1="58" y1="60" x2="55" y2="75" stroke="#F4EFE4" strokeWidth="3" />
-            <line x1="66" y1="60" x2="70" y2="75" stroke="#F4EFE4" strokeWidth="3" />
-            <line x1="60" y1="30" x2="50" y2="20" stroke="#F4EFE4" strokeWidth="2" />
+            <line x1="95" y1="55" x2="30" y2="45" stroke="#F4EFE4" strokeWidth="2" />
+            <line x1="95" y1="60" x2="30" y2="55" stroke="#F4EFE4" strokeWidth="2" />
+            {/* two horses, side by side */}
+            {[10, 50].map(hx => (
+              <g key={hx}>
+                <path d={`M${hx} 78 L${hx - 4} 45 L${hx + 6} 20 L${hx + 16} 22 L${hx + 20} 40 L${hx + 22} 55 L${hx + 26} 78 Z`} />
+                <rect x={hx - 3} y="78" width="6" height="18" />
+                <rect x={hx + 18} y="78" width="6" height="18" />
+                <path d={`M${hx + 16} 22 L${hx + 8} 8 L${hx + 14} 6 L${hx + 22} 18 Z`} />
+              </g>
+            ))}
           </svg>
         </div>
       </div>
 
       <style>{`
         @keyframes chariotRun {
-          from { transform: translateX(-200px); }
+          from { transform: translateX(-360px); }
           to { transform: translateX(100vw); }
         }
-        .chariot-run { animation: chariotRun 9s linear infinite; }
+        .chariot-run { animation: chariotRun 11s linear infinite; }
       `}</style>
 
       {/* HOW IT WORKS */}
