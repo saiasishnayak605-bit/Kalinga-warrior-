@@ -162,10 +162,19 @@ function AuthBox({ onAuthed }) {
   const [mode, setMode] = useState("signup");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const submit = async () => {
     setBusy(true); setError("");
     try {
+      if (mode === "reset") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        });
+        if (error) { setError(error.message); return; }
+        setResetSent(true);
+        return;
+      }
       const { data, error } = mode === "signup"
         ? await supabase.auth.signUp({ email, password })
         : await supabase.auth.signInWithPassword({ email, password });
@@ -179,24 +188,76 @@ function AuthBox({ onAuthed }) {
     }
   };
 
+  if (mode === "reset" && resetSent) {
+    return (
+      <div style={{ maxWidth: 360, margin: "60px auto", padding: 28, border: "1px solid #3A3F4B", borderRadius: 2, background: "#161920", textAlign: "center" }}>
+        <h2 className="fraunces" style={{ fontSize: 20, marginBottom: 10 }}>Check your email</h2>
+        <p style={{ color: "#9BA0AC", fontSize: 14, marginBottom: 18 }}>We sent a password reset link to {email}.</p>
+        <span onClick={() => { setMode("login"); setResetSent(false); }} style={{ color: "#C9A227", cursor: "pointer", fontSize: 13 }}>Back to log in</span>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: 360, margin: "60px auto", padding: 28, border: "1px solid #3A3F4B", borderRadius: 2, background: "#161920" }}>
-      <h2 className="fraunces" style={{ fontSize: 22, marginBottom: 18 }}>{mode === "signup" ? "Create your account" : "Log in"}</h2>
+      <h2 className="fraunces" style={{ fontSize: 22, marginBottom: 18 }}>
+        {mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Log in"}
+      </h2>
       <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
         style={{ width: "100%", background: "#12151C", border: "1px solid #3A3F4B", color: "#F4EFE4", padding: "11px 14px", borderRadius: 2, fontSize: 14, marginBottom: 10, boxSizing: "border-box" }} />
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-        style={{ width: "100%", background: "#12151C", border: "1px solid #3A3F4B", color: "#F4EFE4", padding: "11px 14px", borderRadius: 2, fontSize: 14, marginBottom: 14, boxSizing: "border-box" }} />
+      {mode !== "reset" && (
+        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+          style={{ width: "100%", background: "#12151C", border: "1px solid #3A3F4B", color: "#F4EFE4", padding: "11px 14px", borderRadius: 2, fontSize: 14, marginBottom: 14, boxSizing: "border-box" }} />
+      )}
       {error && <div style={{ color: "#D97757", fontSize: 13, marginBottom: 12 }}>{error}</div>}
       <button onClick={submit} disabled={busy}
         style={{ width: "100%", background: "#C9A227", color: "#12151C", padding: "12px", borderRadius: 2, fontWeight: 700, border: "none", cursor: "pointer", marginBottom: 12 }}>
-        {busy ? "Please wait…" : mode === "signup" ? "Sign up" : "Log in"}
+        {busy ? "Please wait…" : mode === "signup" ? "Sign up" : mode === "reset" ? "Send reset link" : "Log in"}
       </button>
+      {mode === "login" && (
+        <div style={{ textAlign: "center", fontSize: 13, marginBottom: 10 }}>
+          <span onClick={() => setMode("reset")} style={{ color: "#9BA0AC", cursor: "pointer" }}>Forgot password?</span>
+        </div>
+      )}
       <div style={{ textAlign: "center", fontSize: 13, color: "#9BA0AC" }}>
-        {mode === "signup" ? "Already have an account?" : "New here?"}{" "}
-        <span onClick={() => setMode(mode === "signup" ? "login" : "signup")} style={{ color: "#C9A227", cursor: "pointer" }}>
-          {mode === "signup" ? "Log in" : "Sign up"}
-        </span>
+        {mode === "reset" ? (
+          <span onClick={() => setMode("login")} style={{ color: "#C9A227", cursor: "pointer" }}>Back to log in</span>
+        ) : (
+          <>
+            {mode === "signup" ? "Already have an account?" : "New here?"}{" "}
+            <span onClick={() => setMode(mode === "signup" ? "login" : "signup")} style={{ color: "#C9A227", cursor: "pointer" }}>
+              {mode === "signup" ? "Log in" : "Sign up"}
+            </span>
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function NewPasswordForm({ onDone }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    setBusy(true); setError("");
+    const { error } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+    if (error) { setError(error.message); return; }
+    onDone();
+  };
+
+  return (
+    <div style={{ maxWidth: 360, margin: "60px auto", padding: 28, border: "1px solid #3A3F4B", borderRadius: 2, background: "#161920" }}>
+      <h2 className="fraunces" style={{ fontSize: 20, marginBottom: 14 }}>Set a new password</h2>
+      <input type="password" placeholder="New password" value={password} onChange={e => setPassword(e.target.value)}
+        style={{ width: "100%", background: "#12151C", border: "1px solid #3A3F4B", color: "#F4EFE4", padding: "11px 14px", borderRadius: 2, fontSize: 14, marginBottom: 14, boxSizing: "border-box" }} />
+      {error && <div style={{ color: "#D97757", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+      <button onClick={submit} disabled={busy}
+        style={{ width: "100%", background: "#C9A227", color: "#12151C", padding: "12px", borderRadius: 2, fontWeight: 700, border: "none", cursor: "pointer" }}>
+        {busy ? "Saving…" : "Save new password"}
+      </button>
     </div>
   );
 }
@@ -209,12 +270,16 @@ export default function PodiumApp() {
   const [level, setLevel] = useState("");
   const [company, setCompany] = useState("");
   const [imgObj, setImgObj] = useState(null);
+  const [isRecovering, setIsRecovering] = useState(false);
   const canvasRef = useRef(null);
   const fileRef = useRef(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => setSession(sess));
+    const { data: listener } = supabase.auth.onAuthStateChange((event, sess) => {
+      setSession(sess);
+      if (event === "PASSWORD_RECOVERY") setIsRecovering(true);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
 
@@ -359,6 +424,49 @@ export default function PodiumApp() {
         </div>
       </section>
 
+      {/* CHARIOT BAND */}
+      <div style={{
+        width: "100%", height: 140, position: "relative", overflow: "hidden",
+        background: "linear-gradient(180deg, #2A1608 0%, #4A2308 40%, #7A3A0A 100%)",
+        borderTop: "1px solid #C9A227", borderBottom: "1px solid #C9A227",
+      }}>
+        <svg width="100%" height="140" viewBox="0 0 1000 140" preserveAspectRatio="none" style={{ position: "absolute", top: 0, left: 0 }}>
+          <circle cx="850" cy="35" r="26" fill="#F4A623" opacity="0.9" />
+          <line x1="0" y1="118" x2="1000" y2="118" stroke="#C9A227" strokeWidth="1" opacity="0.4" />
+        </svg>
+        <div className="chariot-run" style={{ position: "absolute", bottom: 8, left: 0 }}>
+          <svg width="180" height="90" viewBox="0 0 180 90" fill="none">
+            {/* wheel */}
+            <circle cx="130" cy="65" r="20" stroke="#F4EFE4" strokeWidth="3" fill="none" />
+            <circle cx="130" cy="65" r="3" fill="#F4EFE4" />
+            {[0, 45, 90, 135].map(a => (
+              <line key={a} x1="130" y1="65" x2={130 + 20 * Math.cos((a * Math.PI) / 180)} y2={65 + 20 * Math.sin((a * Math.PI) / 180)} stroke="#F4EFE4" strokeWidth="2" />
+            ))}
+            {/* chariot body */}
+            <path d="M95 65 L120 45 L145 45 L140 65 Z" fill="#F4EFE4" />
+            <line x1="107" y1="45" x2="107" y2="30" stroke="#F4EFE4" strokeWidth="3" />
+            {/* rider */}
+            <circle cx="107" cy="22" r="6" fill="#F4EFE4" />
+            <line x1="107" y1="28" x2="107" y2="44" stroke="#F4EFE4" strokeWidth="3" />
+            {/* reins */}
+            <line x1="95" y1="50" x2="55" y2="35" stroke="#F4EFE4" strokeWidth="2" />
+            {/* horse */}
+            <path d="M55 60 L52 40 L60 25 L68 30 L64 45 L70 60 Z" fill="#F4EFE4" />
+            <line x1="58" y1="60" x2="55" y2="75" stroke="#F4EFE4" strokeWidth="3" />
+            <line x1="66" y1="60" x2="70" y2="75" stroke="#F4EFE4" strokeWidth="3" />
+            <line x1="60" y1="30" x2="50" y2="20" stroke="#F4EFE4" strokeWidth="2" />
+          </svg>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes chariotRun {
+          from { transform: translateX(-200px); }
+          to { transform: translateX(100vw); }
+        }
+        .chariot-run { animation: chariotRun 9s linear infinite; }
+      `}</style>
+
       {/* HOW IT WORKS */}
       <section style={{ padding: "0 48px 80px", maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
         {[
@@ -376,7 +484,9 @@ export default function PodiumApp() {
 
       {/* STUDIO */}
       <section id="studio" style={{ padding: "40px 48px 100px", maxWidth: 1100, margin: "0 auto" }}>
-        {!session ? (
+        {isRecovering ? (
+          <NewPasswordForm onDone={() => setIsRecovering(false)} />
+        ) : !session ? (
           <AuthBox onAuthed={() => {}} />
         ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 48, alignItems: "start" }}>
