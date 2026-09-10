@@ -2,6 +2,33 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Upload, Download, Award, Star, Check, ArrowRight, Building2, Sparkles, LogIn, LogOut } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
+function Reveal({ children, delay = 0, style = {} }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{
+      ...style,
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(24px)",
+      transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
+    }}>
+      {children}
+    </div>
+  );
+}
+
 function LogoMark({ size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
@@ -429,19 +456,27 @@ export default function PodiumApp() {
 
       {/* HERO */}
       <section style={{ padding: "60px 48px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+        <Reveal style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <CrestBadge size={170} />
-        </div>
-        <div className="mono" style={{ color: "#C9A227", fontSize: 13, letterSpacing: 3, marginBottom: 18 }}>EMPLOYEE RECOGNITION, FRAMED</div>
-        <h1 className="fraunces" style={{ fontSize: 56, lineHeight: 1.1, fontWeight: 700, margin: "0 0 22px", maxWidth: 780, marginLeft: "auto", marginRight: "auto" }}>
-          Every milestone deserves its own plaque.
-        </h1>
-        <p style={{ color: "#9BA0AC", fontSize: 18, maxWidth: 560, margin: "0 auto 36px", lineHeight: 1.6 }}>
-          Upload a photo, pick a level, and get a branded achievement frame in seconds — no design team required.
-        </p>
+        </Reveal>
+        <Reveal delay={0.1} style={{}}>
+          <div className="mono" style={{ color: "#C9A227", fontSize: 13, letterSpacing: 3, marginBottom: 18 }}>EMPLOYEE RECOGNITION, FRAMED</div>
+        </Reveal>
+        <Reveal delay={0.2} style={{}}>
+          <h1 className="fraunces" style={{ fontSize: 56, lineHeight: 1.1, fontWeight: 700, margin: "0 0 22px", maxWidth: 780, marginLeft: "auto", marginRight: "auto" }}>
+            Every milestone deserves its own plaque.
+          </h1>
+        </Reveal>
+        <Reveal delay={0.3} style={{}}>
+          <p style={{ color: "#9BA0AC", fontSize: 18, maxWidth: 560, margin: "0 auto 36px", lineHeight: 1.6 }}>
+            Upload a photo, pick a level, and get a branded achievement frame in seconds — no design team required.
+          </p>
+        </Reveal>
+        <Reveal delay={0.4} style={{}}>
         <a href="#studio" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#C9A227", color: "#12151C", padding: "14px 28px", borderRadius: 2, fontWeight: 700, textDecoration: "none", fontSize: 15 }}>
           Build your first frame <ArrowRight size={16} />
         </a>
+        </Reveal>
 
         <div style={{ marginTop: 56, display: "flex", justifyContent: "center" }}>
           <svg width="220" height="140" viewBox="0 0 220 140" fill="none">
@@ -484,9 +519,8 @@ export default function PodiumApp() {
                 })}
               </g>
             ))}
-            {/* chariot platform + canopy */}
+            {/* chariot platform */}
             <path d="M95 78 L95 50 L215 50 L215 78 Z" />
-            <path d="M85 50 L225 50 L210 30 L100 30 Z" />
             {/* flag */}
             <line x1="155" y1="30" x2="155" y2="8" stroke="#F4EFE4" strokeWidth="3" />
             <path d="M155 8 L180 14 L155 20 Z" />
@@ -523,12 +557,12 @@ export default function PodiumApp() {
           { n: "01", t: "Pick a template", d: "Choose from plaque, badge, or ribbon styles." },
           { n: "02", t: "Add your photo", d: "Upload once, it's composited automatically." },
           { n: "03", t: "Download & share", d: "Get a branded PNG, ready to post or print." },
-        ].map(step => (
-          <div key={step.n} style={{ textAlign: "center" }}>
+        ].map((step, i) => (
+          <Reveal key={step.n} delay={i * 0.15} style={{ textAlign: "center" }}>
             <div className="mono" style={{ color: "#C9A227", fontSize: 13, marginBottom: 10 }}>{step.n}</div>
             <div className="fraunces" style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{step.t}</div>
             <div style={{ color: "#9BA0AC", fontSize: 14, lineHeight: 1.5 }}>{step.d}</div>
-          </div>
+          </Reveal>
         ))}
       </section>
 
@@ -612,8 +646,8 @@ export default function PodiumApp() {
             <h2 className="fraunces" style={{ fontSize: 36, fontWeight: 600 }}>Pick a plan, cancel anytime</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
-            {PLANS.map(p => (
-              <div key={p.name} style={{
+            {PLANS.map((p, i) => (
+              <Reveal key={p.name} delay={i * 0.15} style={{
                 border: `1px solid ${p.featured ? "#C9A227" : "#23262F"}`,
                 background: p.featured ? "#161920" : "transparent",
                 borderRadius: 2, padding: 28, position: "relative"
@@ -641,7 +675,7 @@ export default function PodiumApp() {
                   }}>
                   {checkoutBusy === p.key ? "Opening…" : `Choose ${p.name}`}
                 </button>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
