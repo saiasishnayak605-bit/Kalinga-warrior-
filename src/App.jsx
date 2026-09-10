@@ -432,6 +432,15 @@ export default function PodiumApp() {
         .mono { font-family: 'IBM Plex Mono', monospace; }
         input, select { font-family: 'Inter', sans-serif; }
         ::selection { background: #C9A227; color: #12151C; }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-studio { grid-template-columns: 1fr 1.1fr; }
+        @media (max-width: 768px) {
+          .grid-3 { grid-template-columns: 1fr; }
+          .grid-studio { grid-template-columns: 1fr; }
+          h1 { font-size: 36px !important; }
+          nav { padding: 16px 20px !important; }
+          section { padding-left: 20px !important; padding-right: 20px !important; }
+        }
         button, a { transition: opacity 0.15s ease, transform 0.15s ease; }
         button:hover:not(:disabled), a:hover { opacity: 0.85; }
         button:active:not(:disabled) { transform: scale(0.98); }
@@ -552,7 +561,7 @@ export default function PodiumApp() {
       `}</style>
 
       {/* HOW IT WORKS */}
-      <section style={{ padding: "0 48px 80px", maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+      <section className="grid-3" style={{ padding: "0 48px 80px", maxWidth: 900, margin: "0 auto", display: "grid", gap: 32 }}>
         {[
           { n: "01", t: "Pick a template", d: "Choose from plaque, badge, or ribbon styles." },
           { n: "02", t: "Add your photo", d: "Upload once, it's composited automatically." },
@@ -573,7 +582,7 @@ export default function PodiumApp() {
         ) : !session ? (
           <AuthBox onAuthed={() => {}} />
         ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 48, alignItems: "start" }}>
+        <div className="grid-studio" style={{ display: "grid", gap: 48, alignItems: "start" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <h2 className="fraunces" style={{ fontSize: 28, fontWeight: 600 }}>The Studio</h2>
@@ -645,7 +654,7 @@ export default function PodiumApp() {
             <div className="mono" style={{ color: "#C9A227", fontSize: 13, letterSpacing: 3, marginBottom: 14 }}>PRICING</div>
             <h2 className="fraunces" style={{ fontSize: 36, fontWeight: 600 }}>Pick a plan, cancel anytime</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+          <div className="grid-3" style={{ display: "grid", gap: 24 }}>
             {PLANS.map((p, i) => (
               <Reveal key={p.name} delay={i * 0.15} style={{
                 border: `1px solid ${p.featured ? "#C9A227" : "#23262F"}`,
@@ -681,9 +690,37 @@ export default function PodiumApp() {
         </div>
       </section>
 
-      <footer style={{ padding: "30px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", color: "#6B7280", fontSize: 13 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><LogoMark size={14} /> Kalinga Warrior — recognition, framed</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Sparkles size={13} color="#C9A227" /> Prototype build</div>
+      {/* FAQ */}
+      <section style={{ padding: "20px 48px 80px", maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div className="mono" style={{ color: "#C9A227", fontSize: 13, letterSpacing: 3, marginBottom: 14 }}>QUESTIONS</div>
+          <h2 className="fraunces" style={{ fontSize: 32, fontWeight: 600 }}>Before you start</h2>
+        </div>
+        <div style={{ display: "grid", gap: 22 }}>
+          {[
+            { q: "Can I cancel anytime?", a: "Yes — subscriptions can be cancelled at any point and you'll keep access until the end of your current billing cycle." },
+            { q: "Is my photo stored securely?", a: "Photos are stored in an access-controlled database tied only to your account — no one else can see or download them." },
+            { q: "How does billing work?", a: "You're charged automatically each month via UPI or card through Razorpay, a licensed Indian payment processor. No manual payment or screenshots needed." },
+            { q: "What happens if I run out of downloads?", a: "You can upgrade to a higher plan anytime, and your new limit applies immediately." },
+          ].map((item, i) => (
+            <Reveal key={item.q} delay={i * 0.1} style={{ borderBottom: "1px solid #23262F", paddingBottom: 20 }}>
+              <div className="fraunces" style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>{item.q}</div>
+              <div style={{ color: "#9BA0AC", fontSize: 14, lineHeight: 1.6 }}>{item.a}</div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <footer style={{ padding: "36px 48px", borderTop: "1px solid #23262F" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 16, color: "#6B7280", fontSize: 13 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}><LogoMark size={14} /> © {new Date().getFullYear()} Kalinga Warrior</div>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            <a href="#" style={{ color: "#9BA0AC", textDecoration: "none" }}>Terms</a>
+            <a href="#" style={{ color: "#9BA0AC", textDecoration: "none" }}>Privacy</a>
+            <a href="mailto:hello@kalinga-warrior.vercel.app" style={{ color: "#9BA0AC", textDecoration: "none" }}>Contact</a>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>Secure payments via Razorpay</div>
+        </div>
       </footer>
     </div>
   );
