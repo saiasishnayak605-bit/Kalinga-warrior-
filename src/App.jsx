@@ -465,9 +465,6 @@ export default function PodiumApp() {
 
       {/* HERO */}
       <section style={{ padding: "60px 48px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
-        <Reveal style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-          <CrestBadge size={170} />
-        </Reveal>
         <Reveal delay={0.1} style={{}}>
           <div className="mono" style={{ color: "#C9A227", fontSize: 13, letterSpacing: 3, marginBottom: 18 }}>EMPLOYEE RECOGNITION, FRAMED</div>
         </Reveal>
@@ -504,61 +501,6 @@ export default function PodiumApp() {
           </svg>
         </div>
       </section>
-
-      {/* CHARIOT BAND */}
-      <div style={{
-        width: "100%", height: 140, position: "relative", overflow: "hidden",
-        background: "linear-gradient(180deg, #2A1608 0%, #4A2308 40%, #7A3A0A 100%)",
-        borderTop: "1px solid #C9A227", borderBottom: "1px solid #C9A227",
-      }}>
-        <svg width="100%" height="140" viewBox="0 0 1000 140" preserveAspectRatio="none" style={{ position: "absolute", top: 0, left: 0 }}>
-          <circle cx="850" cy="35" r="26" fill="#F4A623" opacity="0.9" />
-          <line x1="0" y1="118" x2="1000" y2="118" stroke="#C9A227" strokeWidth="1" opacity="0.4" />
-        </svg>
-        <div className="chariot-run" style={{ position: "absolute", bottom: 4, left: 0 }}>
-          <svg width="340" height="110" viewBox="0 0 340 110" fill="#F4EFE4">
-            {/* two large decorated wheels */}
-            {[110, 200].map(cx => (
-              <g key={cx}>
-                <circle cx={cx} cy="78" r="26" fill="none" stroke="#F4EFE4" strokeWidth="5" />
-                <circle cx={cx} cy="78" r="5" fill="#F4EFE4" />
-                {Array.from({ length: 10 }).map((_, i) => {
-                  const a = (i * 36 * Math.PI) / 180;
-                  return <line key={i} x1={cx} y1="78" x2={cx + 26 * Math.cos(a)} y2={78 + 26 * Math.sin(a)} stroke="#F4EFE4" strokeWidth="3" />;
-                })}
-              </g>
-            ))}
-            {/* chariot platform */}
-            <path d="M95 78 L95 50 L215 50 L215 78 Z" />
-            {/* flag */}
-            <line x1="155" y1="30" x2="155" y2="8" stroke="#F4EFE4" strokeWidth="3" />
-            <path d="M155 8 L180 14 L155 20 Z" />
-            {/* rider */}
-            <circle cx="155" cy="40" r="8" />
-            <rect x="149" y="46" width="12" height="20" rx="3" />
-            {/* reins */}
-            <line x1="95" y1="55" x2="30" y2="45" stroke="#F4EFE4" strokeWidth="2" />
-            <line x1="95" y1="60" x2="30" y2="55" stroke="#F4EFE4" strokeWidth="2" />
-            {/* two horses, side by side */}
-            {[10, 50].map(hx => (
-              <g key={hx}>
-                <path d={`M${hx} 78 L${hx - 4} 45 L${hx + 6} 20 L${hx + 16} 22 L${hx + 20} 40 L${hx + 22} 55 L${hx + 26} 78 Z`} />
-                <rect x={hx - 3} y="78" width="6" height="18" />
-                <rect x={hx + 18} y="78" width="6" height="18" />
-                <path d={`M${hx + 16} 22 L${hx + 8} 8 L${hx + 14} 6 L${hx + 22} 18 Z`} />
-              </g>
-            ))}
-          </svg>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes chariotRun {
-          from { transform: translateX(-360px); }
-          to { transform: translateX(100vw); }
-        }
-        .chariot-run { animation: chariotRun 11s linear infinite; }
-      `}</style>
 
       {/* HOW IT WORKS */}
       <section className="grid-3" style={{ padding: "0 48px 80px", maxWidth: 900, margin: "0 auto", display: "grid", gap: 32 }}>
