@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Upload, Download, Check, ArrowRight, LogIn, LogOut } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
-function Reveal({ children, delay = 0, style = {} }) {
+function Reveal({ children, delay = 0, style = {}, className = "" }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -18,7 +18,7 @@ function Reveal({ children, delay = 0, style = {} }) {
   }, []);
 
   return (
-    <div ref={ref} style={{
+    <div ref={ref} className={className} style={{
       ...style,
       opacity: visible ? 1 : 0,
       transform: visible ? "translateY(0)" : "translateY(20px)",
@@ -207,17 +207,17 @@ function AuthBox({ onAuthed }) {
   const [mode, setMode] = useState("signup");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
+  const [resetStage, setResetStage] = useState("request"); // request -> code -> newpass
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   const submit = async () => {
     setBusy(true); setError("");
     try {
       if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
-        });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
         if (error) { setError(error.message); return; }
-        setResetSent(true);
+        setResetStage("code");
         return;
       }
       const { data, error } = mode === "signup"
@@ -233,19 +233,73 @@ function AuthBox({ onAuthed }) {
     }
   };
 
+  const verifyCode = async () => {
+    setBusy(true); setError("");
+    try {
+      const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "recovery" });
+      if (error) { setError(error.message); return; }
+      setResetStage("newpass");
+    } catch (err) {
+      setError(err.message || "Invalid or expired code.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveNewPassword = async () => {
+    setBusy(true); setError("");
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) { setError(error.message); return; }
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) onAuthed(data.user);
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const cardStyle = { maxWidth: 380, margin: "40px auto", padding: 32, borderRadius: 24, background: "#FFFFFF", boxShadow: "0 20px 50px rgba(232,134,43,0.12)", border: "1px solid #F5E8D6" };
 
-  if (mode === "reset" && resetSent) {
+  if (mode === "reset" && resetStage === "code") {
     return (
-      <div style={{ ...cardStyle, textAlign: "center" }}>
-        <h2 className="heading" style={{ fontSize: 20, marginBottom: 10, color: "#2B2118" }}>Check your email</h2>
-        <p style={{ color: "#8A7A6D", fontSize: 14, marginBottom: 18 }}>We sent a password reset link to {email}.</p>
-        <span onClick={() => { setMode("login"); setResetSent(false); }} style={{ color: "#E8862B", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Back to log in</span>
-      </div>
+      <Reveal>
+        <div style={cardStyle}>
+          <h2 className="heading" style={{ fontSize: 20, marginBottom: 8, color: "#2B2118" }}>Enter your code</h2>
+          <p style={{ color: "#8A7A6D", fontSize: 14, marginBottom: 18 }}>We emailed a 6-digit code to {email}. Enter it below.</p>
+          <input placeholder="123456" value={code} onChange={e => setCode(e.target.value)} maxLength={6}
+            style={{ ...inputStyle, marginBottom: 14, textAlign: "center", fontSize: 22, letterSpacing: 6 }} />
+          {error && <div style={{ color: "#C9540F", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <button onClick={verifyCode} disabled={busy} style={{ ...primaryBtnStyle, marginBottom: 12 }}>
+            {busy ? "Verifying…" : "Verify code"}
+          </button>
+          <div style={{ textAlign: "center", fontSize: 13 }}>
+            <span onClick={() => { setMode("login"); setResetStage("request"); }} style={{ color: "#E8862B", cursor: "pointer", fontWeight: 600 }}>Back to log in</span>
+          </div>
+        </div>
+      </Reveal>
+    );
+  }
+
+  if (mode === "reset" && resetStage === "newpass") {
+    return (
+      <Reveal>
+        <div style={cardStyle}>
+          <h2 className="heading" style={{ fontSize: 20, marginBottom: 14, color: "#2B2118" }}>Set a new password</h2>
+          <input type="password" placeholder="New password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+            style={{ ...inputStyle, marginBottom: 14 }} />
+          {error && <div style={{ color: "#C9540F", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <button onClick={saveNewPassword} disabled={busy} style={primaryBtnStyle}>
+            {busy ? "Saving…" : "Save new password"}
+          </button>
+        </div>
+      </Reveal>
     );
   }
 
   return (
+    <Reveal>
     <div style={cardStyle}>
       <h2 className="heading" style={{ fontSize: 22, marginBottom: 18, color: "#2B2118" }}>
         {mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Log in"}
@@ -256,7 +310,7 @@ function AuthBox({ onAuthed }) {
       )}
       {error && <div style={{ color: "#C9540F", fontSize: 13, marginBottom: 12 }}>{error}</div>}
       <button onClick={submit} disabled={busy} style={{ ...primaryBtnStyle, marginBottom: 12 }}>
-        {busy ? "Please wait…" : mode === "signup" ? "Sign up" : mode === "reset" ? "Send reset link" : "Log in"}
+        {busy ? "Please wait…" : mode === "signup" ? "Sign up" : mode === "reset" ? "Send code" : "Log in"}
       </button>
       {mode === "login" && (
         <div style={{ textAlign: "center", fontSize: 13, marginBottom: 10 }}>
@@ -276,6 +330,7 @@ function AuthBox({ onAuthed }) {
         )}
       </div>
     </div>
+    </Reveal>
   );
 }
 
@@ -313,8 +368,15 @@ export default function PodiumApp() {
   const [company, setCompany] = useState("");
   const [imgObj, setImgObj] = useState(null);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const canvasRef = useRef(null);
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -422,13 +484,19 @@ export default function PodiumApp() {
           nav { padding: 16px 20px !important; }
           section { padding-left: 20px !important; padding-right: 20px !important; }
         }
-        button, a { transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; }
-        button:hover:not(:disabled), a:hover { opacity: 0.9; }
-        button:active:not(:disabled) { transform: scale(0.98); }
+        button, a { transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.2s ease; }
+        button:hover:not(:disabled), a:hover { opacity: 0.92; transform: translateY(-2px); }
+        button:active:not(:disabled) { transform: scale(0.97); }
+        .card-hover { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 45px rgba(232,134,43,0.18) !important; }
+        input { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        input:focus { outline: none; border-color: #E8862B !important; box-shadow: 0 0 0 4px rgba(232,134,43,0.12); }
+        @keyframes floatBlob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-16px); } }
+        .hero-blob { animation: floatBlob 6s ease-in-out infinite; }
       `}</style>
 
       {/* NAV */}
-      <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 48px", background: "rgba(255,251,245,0.9)", backdropFilter: "blur(6px)", borderBottom: "1px solid #F5E8D6", position: "sticky", top: 0, zIndex: 10 }}>
+      <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 48px", background: "rgba(255,251,245,0.9)", backdropFilter: "blur(6px)", borderBottom: "1px solid #F5E8D6", position: "sticky", top: 0, zIndex: 10, boxShadow: scrolled ? "0 8px 24px rgba(43,33,24,0.08)" : "none", transition: "box-shadow 0.3s ease" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <LogoMark size={30} />
           <span className="heading" style={{ fontSize: 19, fontWeight: 700, color: "#2B2118" }}>Kalinga Warrior</span>
@@ -450,7 +518,7 @@ export default function PodiumApp() {
 
       {/* HERO */}
       <section style={{ padding: "72px 48px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -140, left: "50%", transform: "translateX(-50%)", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,209,102,0.35), rgba(255,209,102,0))", zIndex: 0 }} />
+        <div className="hero-blob" style={{ position: "absolute", top: -140, left: "50%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,209,102,0.35), rgba(255,209,102,0))", zIndex: 0 }} />
         <div style={{ position: "relative", zIndex: 1 }}>
           <Reveal delay={0.1}>
             <div className="label" style={{ color: "#E8862B", fontSize: 13, letterSpacing: 2, marginBottom: 18 }}>Employee recognition, framed</div>
@@ -484,7 +552,7 @@ export default function PodiumApp() {
           { n: "02", t: "Add your photo", d: "Upload once, it's composited automatically." },
           { n: "03", t: "Download & share", d: "Get a branded PNG, ready to post or print." },
         ].map((step, i) => (
-          <Reveal key={step.n} delay={i * 0.15} style={{ textAlign: "center", background: "#FFFFFF", borderRadius: 20, padding: "28px 20px", boxShadow: "0 10px 30px rgba(43,33,24,0.05)", border: "1px solid #F5E8D6" }}>
+          <Reveal key={step.n} delay={i * 0.15} className="card-hover" style={{ textAlign: "center", background: "#FFFFFF", borderRadius: 20, padding: "28px 20px", boxShadow: "0 10px 30px rgba(43,33,24,0.05)", border: "1px solid #F5E8D6" }}>
             <div style={{
               width: 40, height: 40, borderRadius: "50%", margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center",
               background: "linear-gradient(135deg, #FFD166, #E8862B)", color: "#fff", fontWeight: 700, fontSize: 14,
@@ -574,7 +642,7 @@ export default function PodiumApp() {
           </div>
           <div className="grid-3" style={{ display: "grid", gap: 24 }}>
             {PLANS.map((p, i) => (
-              <Reveal key={p.name} delay={i * 0.15} style={{
+              <Reveal key={p.name} delay={i * 0.15} className="card-hover" style={{
                 border: p.featured ? "2px solid #E8862B" : "1px solid #F0DFC5",
                 background: "#FFFFFF",
                 borderRadius: 24, padding: 28, position: "relative",
@@ -622,7 +690,7 @@ export default function PodiumApp() {
             { q: "How does billing work?", a: "You're charged automatically each month via UPI or card through Razorpay, a licensed Indian payment processor. No manual payment or screenshots needed." },
             { q: "What happens if I run out of downloads?", a: "You can upgrade to a higher plan anytime, and your new limit applies immediately." },
           ].map((item, i) => (
-            <Reveal key={item.q} delay={i * 0.1} style={{ background: "#FFFFFF", borderRadius: 16, padding: 22, border: "1px solid #F5E8D6" }}>
+            <Reveal key={item.q} delay={i * 0.1} className="card-hover" style={{ background: "#FFFFFF", borderRadius: 16, padding: 22, border: "1px solid #F5E8D6" }}>
               <div className="heading" style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: "#2B2118" }}>{item.q}</div>
               <div style={{ color: "#8A7A6D", fontSize: 14, lineHeight: 1.6 }}>{item.a}</div>
             </Reveal>
